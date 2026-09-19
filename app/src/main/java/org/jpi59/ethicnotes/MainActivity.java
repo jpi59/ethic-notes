@@ -1,3 +1,4 @@
+/* Copyright (C) 2026 jpi59. SPDX-License-Identifier: GPL-3.0-or-later */
 package org.jpi59.ethicnotes;
 
 import android.app.Activity;
@@ -5,12 +6,20 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -28,10 +37,15 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * Ethic Notes: Ultra-secure, zero-permission, copyleft personal notes manager.
+ * Inspired by the clean, ergonomic, copyleft visual aesthetic of Ethic Tuner.
+ */
 public class MainActivity extends Activity {
 
-    private static final String PREFS_NAME = "ethic_notes_prefs";
-    private static final String PREF_SHIELD_ENABLED = "privacy_shield_enabled";
+    private static final String PREFS_NAME = "appearance";
+    private static final String PREF_DARK_MODE = "dark_mode";
+    private static final String PREF_SHIELD = "privacy_shield";
 
     private static final int REQ_EXPORT_NOTE = 1001;
     private static final int REQ_EXPORT_ALL = 1002;
@@ -40,30 +54,57 @@ public class MainActivity extends Activity {
     private NotesDbHelper dbHelper;
     private NotesAdapter adapter;
 
+    private View rootLayout;
     private View containerList;
     private View containerEditor;
     private ListView listView;
     private View emptyStateLayout;
+    private TextView emptyTitle;
+    private TextView emptyDesc;
     private EditText searchInput;
+    private TextView appTitle;
+    private TextView appSubtitle;
 
+    private ImageButton btnThemeToggle;
+    private ImageButton btnPrivacyShield;
+    private ImageButton btnMenuExportImport;
+    private ImageButton fabAddNote;
+
+    private ImageButton btnEditorBack;
+    private ImageButton btnEditorShare;
+    private ImageButton btnEditorExport;
+    private ImageButton btnEditorDelete;
+    private ImageButton btnEditorSave;
     private EditText editorTitle;
     private EditText editorContent;
     private TextView editorWordCharCount;
+    private View editorDivider;
+    private View editorActionBar;
 
     private long currentNoteId = -1;
+    private boolean darkMode = false;
     private boolean isPrivacyShieldActive = false;
+
+    private final Handler autoSaveHandler = new Handler(Looper.getMainLooper());
+    private final Runnable autoSaveRunnable = this::autoSaveCurrentNote;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        darkMode = prefs.getBoolean(PREF_DARK_MODE, false);
+        isPrivacyShieldActive = prefs.getBoolean(PREF_SHIELD, false);
+
         dbHelper = new NotesDbHelper(this);
+
         initViews();
-        setupPrivacyShield();
+        applyPrivacyShield();
         setupList();
         setupSearch();
         setupEditor();
+        applyTheme();
         handleIncomingIntent(getIntent());
     }
 
@@ -75,30 +116,150 @@ public class MainActivity extends Activity {
     }
 
     private void initViews() {
+        rootLayout = findViewById(R.id.main_root);
         containerList = findViewById(R.id.container_list);
         containerEditor = findViewById(R.id.container_editor);
         listView = findViewById(R.id.notes_list_view);
         emptyStateLayout = findViewById(R.id.layout_empty_state);
+        emptyTitle = findViewById(R.id.empty_title);
+        emptyDesc = findViewById(R.id.empty_desc);
         searchInput = findViewById(R.id.search_input);
+        appTitle = findViewById(R.id.app_title);
+        appSubtitle = findViewById(R.id.app_subtitle);
 
+        btnThemeToggle = findViewById(R.id.btn_theme_toggle);
+        btnThemeToggle.setOnClickListener(v -> toggleTheme());
+
+        btnPrivacyShield = findViewById(R.id.btn_privacy_shield);
+        btnPrivacyShield.setOnClickListener(v -> togglePrivacyShield());
+
+        btnMenuExportImport = findViewById(R.id.btn_menu_export_import);
+        btnMenuExportImport.setOnClickListener(v -> showStorageMenu());
+
+        fabAddNote = findViewById(R.id.fab_add_note);
+        fabAddNote.setOnClickListener(v -> openEditor(-1));
+
+        editorActionBar = findViewById(R.id.editor_action_bar);
+        btnEditorBack = findViewById(R.id.btn_editor_back);
+        btnEditorShare = findViewById(R.id.btn_editor_share);
+        btnEditorExport = findViewById(R.id.btn_editor_export);
+        btnEditorDelete = findViewById(R.id.btn_editor_delete);
+        btnEditorSave = findViewById(R.id.btn_editor_save);
         editorTitle = findViewById(R.id.editor_title);
         editorContent = findViewById(R.id.editor_content);
         editorWordCharCount = findViewById(R.id.editor_char_word_count);
-
-        ImageButton fabAdd = findViewById(R.id.fab_add_note);
-        fabAdd.setOnClickListener(v -> openEditor(-1));
-
-        ImageButton btnPrivacyShield = findViewById(R.id.btn_privacy_shield);
-        btnPrivacyShield.setOnClickListener(v -> togglePrivacyShield());
-
-        ImageButton btnMenu = findViewById(R.id.btn_menu_export_import);
-        btnMenu.setOnClickListener(v -> showStorageMenu());
+        editorDivider = findViewById(R.id.editor_divider);
     }
 
-    private void setupPrivacyShield() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        isPrivacyShieldActive = prefs.getBoolean(PREF_SHIELD_ENABLED, false);
-        applyPrivacyShield();
+    private int dp(int n) {
+        return Math.round(n * getResources().getDisplayMetrics().density);
+    }
+
+    private GradientDrawable roundedBackground(int fill, int stroke, int radiusDp) {
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(fill);
+        gd.setCornerRadius(dp(radiusDp));
+        gd.setStroke(dp(1), stroke);
+        return gd;
+    }
+
+    private int actionColor() {
+        return darkMode ? getColor(R.color.accent_dark) : getColor(R.color.accent);
+    }
+
+    private void styleImageButton(ImageButton btn, int iconRes, int tintColor) {
+        if (btn == null) return;
+        Drawable d = getDrawable(iconRes);
+        if (d != null) {
+            d = d.mutate();
+            d.setTint(tintColor);
+            btn.setImageDrawable(d);
+        }
+        btn.setBackgroundColor(Color.TRANSPARENT);
+    }
+
+    private void applyTheme() {
+        int ink = darkMode ? Color.rgb(226, 232, 226) : getColor(R.color.ink);
+        int muted = darkMode ? Color.rgb(177, 184, 177) : getColor(R.color.muted);
+        int surface = darkMode ? Color.rgb(20, 23, 21) : getColor(R.color.surface);
+        int cardFill = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int cardStroke = darkMode ? Color.rgb(44, 51, 46) : Color.rgb(228, 226, 220);
+        int action = actionColor();
+
+        // System bars
+        getWindow().setStatusBarColor(surface);
+        getWindow().setNavigationBarColor(surface);
+        int systemBars = darkMode ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (!darkMode && Build.VERSION.SDK_INT >= 26) {
+            systemBars |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(systemBars);
+
+        // Root & list backgrounds
+        rootLayout.setBackgroundColor(surface);
+        containerList.setBackgroundColor(surface);
+        containerEditor.setBackgroundColor(surface);
+        editorActionBar.setBackgroundColor(surface);
+
+        // Typography
+        appTitle.setTextColor(ink);
+        appSubtitle.setTextColor(muted);
+        emptyTitle.setTextColor(ink);
+        emptyDesc.setTextColor(muted);
+        editorWordCharCount.setTextColor(muted);
+
+        // Search bar
+        searchInput.setBackground(roundedBackground(cardFill, cardStroke, 14));
+        searchInput.setTextColor(ink);
+        searchInput.setHintTextColor(muted);
+
+        // Buttons
+        styleImageButton(btnThemeToggle, darkMode ? R.drawable.ic_theme_sun : R.drawable.ic_theme_moon, action);
+        btnThemeToggle.setContentDescription(getString(darkMode ? R.string.light_mode : R.string.dark_mode));
+
+        int shieldColor = isPrivacyShieldActive ? action : muted;
+        styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
+        styleImageButton(btnMenuExportImport, R.drawable.ic_share, action);
+
+        // Floating Action Button
+        int fabFill = action;
+        GradientDrawable fabBg = new GradientDrawable();
+        fabBg.setShape(GradientDrawable.OVAL);
+        fabBg.setColor(fabFill);
+        fabAddNote.setBackground(fabBg);
+        Drawable addIcon = getDrawable(R.drawable.ic_add);
+        if (addIcon != null) {
+            addIcon = addIcon.mutate();
+            addIcon.setTint(darkMode ? Color.rgb(20, 23, 21) : Color.rgb(255, 255, 255));
+            fabAddNote.setImageDrawable(addIcon);
+        }
+
+        // Editor inputs
+        editorTitle.setTextColor(ink);
+        editorTitle.setHintTextColor(muted);
+        editorContent.setTextColor(ink);
+        editorContent.setHintTextColor(muted);
+        editorDivider.setBackgroundColor(cardStroke);
+
+        // Editor buttons
+        styleImageButton(btnEditorBack, R.drawable.ic_back, action);
+        styleImageButton(btnEditorShare, R.drawable.ic_share, action);
+        styleImageButton(btnEditorExport, R.drawable.ic_shield, action);
+        styleImageButton(btnEditorDelete, R.drawable.ic_delete, getColor(R.color.danger));
+        styleImageButton(btnEditorSave, R.drawable.ic_save, action);
+
+        if (adapter != null) {
+            adapter.setDarkMode(darkMode);
+        }
+    }
+
+    private void toggleTheme() {
+        darkMode = !darkMode;
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(PREF_DARK_MODE, darkMode)
+                .apply();
+        applyTheme();
     }
 
     private void applyPrivacyShield() {
@@ -107,12 +268,16 @@ public class MainActivity extends Activity {
         } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         }
+        int shieldColor = isPrivacyShieldActive ? actionColor() : (darkMode ? Color.rgb(177, 184, 177) : getColor(R.color.muted));
+        styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
     }
 
     private void togglePrivacyShield() {
         isPrivacyShieldActive = !isPrivacyShieldActive;
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putBoolean(PREF_SHIELD_ENABLED, isPrivacyShieldActive).apply();
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(PREF_SHIELD, isPrivacyShieldActive)
+                .apply();
         applyPrivacyShield();
 
         int msg = isPrivacyShieldActive ? R.string.privacy_shield_enabled : R.string.privacy_shield_disabled;
@@ -121,6 +286,7 @@ public class MainActivity extends Activity {
 
     private void setupList() {
         adapter = new NotesAdapter(this);
+        adapter.setDarkMode(darkMode);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, view, position, id) -> {
             Note note = adapter.getItem(position);
@@ -131,18 +297,11 @@ public class MainActivity extends Activity {
 
     private void setupSearch() {
         searchInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 loadNotes(s.toString());
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void afterTextChanged(Editable s) { }
         });
     }
 
@@ -152,11 +311,10 @@ public class MainActivity extends Activity {
         if (notes.isEmpty()) {
             emptyStateLayout.setVisibility(View.VISIBLE);
             listView.setVisibility(View.GONE);
-            TextView desc = findViewById(R.id.empty_desc);
             if (query != null && !query.trim().isEmpty()) {
-                desc.setText(R.string.no_search_results);
+                emptyDesc.setText(R.string.no_search_results);
             } else {
-                desc.setText(R.string.no_notes_desc);
+                emptyDesc.setText(R.string.no_notes_desc);
             }
         } else {
             emptyStateLayout.setVisibility(View.GONE);
@@ -165,10 +323,21 @@ public class MainActivity extends Activity {
     }
 
     private void setupEditor() {
-        findViewById(R.id.btn_editor_back).setOnClickListener(v -> saveAndCloseEditor());
-        findViewById(R.id.btn_editor_save).setOnClickListener(v -> saveAndCloseEditor());
+        // Back and Save buttons both auto-save and close smoothly without blocking
+        btnEditorBack.setOnClickListener(v -> {
+            autoSaveCurrentNote();
+            closeEditor();
+        });
 
-        findViewById(R.id.btn_editor_delete).setOnClickListener(v -> {
+        btnEditorSave.setOnClickListener(v -> {
+            boolean saved = autoSaveCurrentNote();
+            closeEditor();
+            if (saved) {
+                Toast.makeText(this, R.string.note_saved, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnEditorDelete.setOnClickListener(v -> {
             if (currentNoteId != -1) {
                 confirmDeleteNote();
             } else {
@@ -176,26 +345,22 @@ public class MainActivity extends Activity {
             }
         });
 
-        findViewById(R.id.btn_editor_share).setOnClickListener(v -> shareCurrentNote());
-        findViewById(R.id.btn_editor_export).setOnClickListener(v -> exportSingleNoteSaf());
+        btnEditorShare.setOnClickListener(v -> shareCurrentNote());
+        btnEditorExport.setOnClickListener(v -> exportSingleNoteSaf());
 
-        TextWatcher counterWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+        TextWatcher editorWatcher = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 updateWordCharCounter();
+                // Debounced background auto-save after 1200ms of user pause
+                autoSaveHandler.removeCallbacks(autoSaveRunnable);
+                autoSaveHandler.postDelayed(autoSaveRunnable, 1200);
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void afterTextChanged(Editable s) { }
         };
 
-        editorContent.addTextChangedListener(counterWatcher);
-        editorTitle.addTextChangedListener(counterWatcher);
+        editorContent.addTextChangedListener(editorWatcher);
+        editorTitle.addTextChangedListener(editorWatcher);
     }
 
     private void openEditor(long noteId) {
@@ -205,10 +370,12 @@ public class MainActivity extends Activity {
             if (note != null) {
                 editorTitle.setText(note.getRawTitle());
                 editorContent.setText(note.getContent());
+                btnEditorDelete.setVisibility(View.VISIBLE);
             }
         } else {
             editorTitle.setText("");
             editorContent.setText("");
+            btnEditorDelete.setVisibility(View.GONE);
         }
         updateWordCharCounter();
         containerList.setVisibility(View.GONE);
@@ -216,22 +383,42 @@ public class MainActivity extends Activity {
         editorContent.requestFocus();
     }
 
-    private void saveAndCloseEditor() {
+    /**
+     * Auto-saves the current note.
+     * Never requires a title; if title is omitted, saves content safely.
+     * Updates currentNoteId upon creation to prevent duplicated records.
+     */
+    private synchronized boolean autoSaveCurrentNote() {
+        if (containerEditor.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+
         String title = editorTitle.getText().toString().trim();
         String content = editorContent.getText().toString();
 
-        if (!title.isEmpty() || !content.trim().isEmpty()) {
-            if (currentNoteId == -1) {
-                dbHelper.insertNote(title, content);
-            } else {
-                dbHelper.updateNote(currentNoteId, title, content);
+        if (title.isEmpty() && content.trim().isEmpty()) {
+            if (currentNoteId != -1) {
+                // Erased existing note
+                dbHelper.deleteNote(currentNoteId);
+                currentNoteId = -1;
             }
-            Toast.makeText(this, R.string.note_saved, Toast.LENGTH_SHORT).show();
+            return false;
         }
-        closeEditor();
+
+        if (currentNoteId == -1) {
+            long newId = dbHelper.insertNote(title, content);
+            if (newId != -1) {
+                currentNoteId = newId;
+                btnEditorDelete.setVisibility(View.VISIBLE);
+            }
+        } else {
+            dbHelper.updateNote(currentNoteId, title, content);
+        }
+        return true;
     }
 
     private void closeEditor() {
+        autoSaveHandler.removeCallbacks(autoSaveRunnable);
         containerEditor.setVisibility(View.GONE);
         containerList.setVisibility(View.VISIBLE);
         currentNoteId = -1;
@@ -239,16 +426,32 @@ public class MainActivity extends Activity {
     }
 
     private void confirmDeleteNote() {
-        new AlertDialog.Builder(this)
+        int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int ink = darkMode ? Color.rgb(226, 232, 226) : getColor(R.color.ink);
+        int action = actionColor();
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.confirm_delete_title)
                 .setMessage(R.string.confirm_delete_msg)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    dbHelper.deleteNote(currentNoteId);
-                    Toast.makeText(this, R.string.note_deleted, Toast.LENGTH_SHORT).show();
+                .setPositiveButton(R.string.delete, (d, which) -> {
+                    if (currentNoteId != -1) {
+                        dbHelper.deleteNote(currentNoteId);
+                        currentNoteId = -1;
+                        Toast.makeText(this, R.string.note_deleted, Toast.LENGTH_SHORT).show();
+                    }
                     closeEditor();
                 })
                 .setNegativeButton(R.string.cancel, null)
-                .show();
+                .create();
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(surface));
+        }
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (pos != null) pos.setTextColor(getColor(R.color.danger));
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        if (neg != null) neg.setTextColor(action);
     }
 
     private void updateWordCharCounter() {
@@ -259,6 +462,7 @@ public class MainActivity extends Activity {
     }
 
     private void shareCurrentNote() {
+        autoSaveCurrentNote();
         String title = editorTitle.getText().toString().trim();
         String content = editorContent.getText().toString();
         String fullText = (title.isEmpty() ? "" : title + "\n\n") + content;
@@ -271,8 +475,16 @@ public class MainActivity extends Activity {
 
     // STORAGE ACCESS FRAMEWORK (SAF): ZERO PERMISSIONS REQUIRED
     private void exportSingleNoteSaf() {
+        autoSaveCurrentNote();
         String title = editorTitle.getText().toString().trim();
-        String filename = (title.isEmpty() ? "note" : title.replaceAll("[^a-zA-Z0-9_-]", "_")) + ".txt";
+        if (title.isEmpty()) {
+            String content = editorContent.getText().toString().trim();
+            if (!content.isEmpty()) {
+                String firstLine = content.split("\\r?\\n")[0].trim();
+                title = firstLine.length() > 30 ? firstLine.substring(0, 30) : firstLine;
+            }
+        }
+        String filename = (title.isEmpty() ? "nota" : title.replaceAll("[^a-zA-Z0-9_-]", "_")) + ".txt";
 
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -282,19 +494,26 @@ public class MainActivity extends Activity {
     }
 
     private void showStorageMenu() {
+        int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
         String[] options = new String[]{
                 getString(R.string.action_import),
                 getString(R.string.action_export_all)
         };
-        new AlertDialog.Builder(this)
-                .setItems(options, (dialog, which) -> {
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.storage_menu_title)
+                .setItems(options, (d, which) -> {
                     if (which == 0) {
                         importNotesSaf();
                     } else if (which == 1) {
                         exportAllNotesSaf();
                     }
                 })
-                .show();
+                .create();
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(surface));
+        }
     }
 
     private void exportAllNotesSaf() {
@@ -367,7 +586,6 @@ public class MainActivity extends Activity {
 
             String content = sb.toString().trim();
             if (content.startsWith("[") && content.endsWith("]")) {
-                // Parse JSON array
                 JSONArray array = new JSONArray(content);
                 int count = 0;
                 for (int i = 0; i < array.length(); i++) {
@@ -382,8 +600,7 @@ public class MainActivity extends Activity {
                 loadNotes(null);
                 Toast.makeText(this, getString(R.string.import_success) + " (" + count + ")", Toast.LENGTH_SHORT).show();
             } else {
-                // Plain text import
-                dbHelper.insertNote("Imported Note", content);
+                dbHelper.insertNote("", content);
                 loadNotes(null);
                 Toast.makeText(this, R.string.import_success, Toast.LENGTH_SHORT).show();
             }
@@ -403,14 +620,39 @@ public class MainActivity extends Activity {
                 openEditor(-1);
                 editorContent.setText(sharedText);
                 editorTitle.setText("");
+                autoSaveCurrentNote();
             }
         }
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (containerList != null && containerList.getVisibility() == View.VISIBLE) {
+            loadNotes(searchInput != null ? searchInput.getText().toString() : null);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        autoSaveHandler.removeCallbacks(autoSaveRunnable);
+        // Guarantee note is saved to DB whenever app is backgrounded, minimized, or switched
+        autoSaveCurrentNote();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        autoSaveHandler.removeCallbacks(autoSaveRunnable);
+        autoSaveCurrentNote();
+    }
+
+    @Override
     public void onBackPressed() {
         if (containerEditor.getVisibility() == View.VISIBLE) {
-            saveAndCloseEditor();
+            autoSaveCurrentNote();
+            closeEditor();
         } else {
             super.onBackPressed();
         }
@@ -419,6 +661,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        autoSaveHandler.removeCallbacks(autoSaveRunnable);
         if (dbHelper != null) {
             dbHelper.close();
         }

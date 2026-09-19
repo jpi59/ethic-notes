@@ -1,6 +1,9 @@
+/* Copyright (C) 2026 jpi59. SPDX-License-Identifier: GPL-3.0-or-later */
 package org.jpi59.ethicnotes;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,11 +18,17 @@ public class NotesAdapter extends BaseAdapter {
     private final Context context;
     private final LayoutInflater inflater;
     private List<Note> notes;
+    private boolean darkMode;
 
     public NotesAdapter(Context context) {
         this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.notes = new ArrayList<>();
+    }
+
+    public void setDarkMode(boolean darkMode) {
+        this.darkMode = darkMode;
+        notifyDataSetChanged();
     }
 
     public void setNotes(List<Note> notes) {
@@ -43,9 +52,24 @@ public class NotesAdapter extends BaseAdapter {
     }
 
     private static class ViewHolder {
+        View root;
         TextView title;
         TextView snippet;
         TextView date;
+    }
+
+    private int dp(int n) {
+        return Math.round(n * context.getResources().getDisplayMetrics().density);
+    }
+
+    private GradientDrawable createCardBackground() {
+        GradientDrawable gd = new GradientDrawable();
+        int fill = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int stroke = darkMode ? Color.rgb(44, 51, 46) : Color.rgb(228, 226, 220);
+        gd.setColor(fill);
+        gd.setCornerRadius(dp(14));
+        gd.setStroke(dp(1), stroke);
+        return gd;
     }
 
     @Override
@@ -54,6 +78,7 @@ public class NotesAdapter extends BaseAdapter {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_note, parent, false);
             holder = new ViewHolder();
+            holder.root = convertView.findViewById(R.id.note_card_root);
             holder.title = convertView.findViewById(R.id.note_item_title);
             holder.snippet = convertView.findViewById(R.id.note_item_snippet);
             holder.date = convertView.findViewById(R.id.note_item_date);
@@ -63,7 +88,16 @@ public class NotesAdapter extends BaseAdapter {
         }
 
         Note note = getItem(position);
-        holder.title.setText(note.getTitle());
+        holder.root.setBackground(createCardBackground());
+
+        int ink = darkMode ? Color.rgb(226, 232, 226) : Color.rgb(22, 23, 26);
+        int muted = darkMode ? Color.rgb(177, 184, 177) : Color.rgb(95, 98, 95);
+
+        holder.title.setTextColor(ink);
+        holder.snippet.setTextColor(muted);
+        holder.date.setTextColor(muted);
+
+        holder.title.setText(note.getDisplayTitle(context.getString(R.string.untitled_note)));
         String snippet = note.getSnippet();
         if (snippet.isEmpty()) {
             holder.snippet.setVisibility(View.GONE);

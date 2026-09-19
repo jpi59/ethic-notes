@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/note_card_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
@@ -12,10 +13,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
         android:maxLines="1"
-        android:textColor="@color/text_primary_light"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textColor="@color/ink"
+        android:textSize="17sp" />
 
     <TextView
         android:id="@+id/note_item_snippet"
@@ -23,9 +24,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:ellipsize="end"
-        android:lineSpacingMultiplier="1.1"
+        android:fontFamily="sans-serif"
+        android:lineSpacingMultiplier="1.15"
         android:maxLines="3"
-        android:textColor="@color/text_secondary_light"
+        android:textColor="@color/muted"
         android:textSize="14sp" />
 
     <TextView
@@ -33,7 +35,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:textColor="@color/text_secondary_light"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/muted"
         android:textSize="12sp" />
 
 </LinearLayout>

@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#1B5E20</color>
-    <color name="primary_variant">#003300</color>
-    <color name="on_primary">#FFFFFF</color>
-    <color name="background_light">#F5F7F5</color>
-    <color name="surface_light">#FFFFFF</color>
-    <color name="text_primary_light">#1A1C1A</color>
-    <color name="text_secondary_light">#555953</color>
-    <color name="divider_light">#E0E3DE</color>
-    <color name="card_stroke_light">#D0D5CE</color>
-    <color name="accent_gold">#F9A825</color>
-    <color name="danger_red">#C62828</color>
+    <color name="ink">#16171A</color>
+    <color name="surface">#F8F7F3</color>
+    <color name="accent">#145C52</color>
+    <color name="accent_dark">#72CDBB</color>
+    <color name="muted">#5F625F</color>
 
-    <color name="background_dark">#121412</color>
-    <color name="surface_dark">#1E221E</color>
-    <color name="text_primary_dark">#E2E4DE</color>
-    <color name="text_secondary_dark">#A4A8A1</color>
-    <color name="divider_dark">#2E332D</color>
-    <color name="card_stroke_dark">#3A4039</color>
+    <color name="surface_dark">#141715</color>
+    <color name="ink_dark">#E2E8E2</color>
+    <color name="muted_dark">#B1B8B1</color>
+
+    <color name="card_light">#FFFFFF</color>
+    <color name="card_stroke_light">#E4E2DC</color>
+
+    <color name="card_dark">#1E2320</color>
+    <color name="card_stroke_dark">#2C332E</color>
+
+    <color name="danger">#C62828</color>
+    <color name="gold">#F9A825</color>
 </resources>
