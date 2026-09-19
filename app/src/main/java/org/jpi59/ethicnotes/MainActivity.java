@@ -1001,7 +1001,7 @@ public class MainActivity extends Activity {
         repoCard.addView(createDivider(cardStroke));
         repoCard.addView(createActionRow(
                 R.drawable.ic_code,
-                getString(R.string.gitlab_mirror_label),
+                getString(R.string.gitlab_repo_label),
                 "gitlab.com/jpi59/ethic-notes",
                 ink, muted, action,
                 v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitlab.com/jpi59/ethic-notes")))

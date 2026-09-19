@@ -60,7 +60,7 @@
     <string name="privacy_shield_desc">Bloquea capturas de pantalla, grabaciones y previsualización multitarea.</string>
     <string name="open_source_section">Soberanía y Código Abierto</string>
     <string name="github_repo_label">Repositorio en GitHub</string>
-    <string name="gitlab_mirror_label">Espejo en GitLab</string>
+    <string name="gitlab_repo_label">Repositorio en GitLab</string>
     <string name="license_label">Licencia GNU GPLv3</string>
     <string name="license_desc">Copyleft estricto. Libertad total para usar, estudiar, compartir y modificar.</string>
     <string name="technical_info_section">Integridad Técnica</string>

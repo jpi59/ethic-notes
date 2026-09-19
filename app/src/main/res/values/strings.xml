@@ -60,7 +60,7 @@
     <string name="privacy_shield_desc">Blocks screenshots, recordings, and recent app previews.</string>
     <string name="open_source_section">Sovereignty &amp; Source Code</string>
     <string name="github_repo_label">GitHub Repository</string>
-    <string name="gitlab_mirror_label">GitLab Mirror</string>
+    <string name="gitlab_repo_label">GitLab Repository</string>
     <string name="license_label">GNU GPLv3 License</string>
     <string name="license_desc">Strict Copyleft. Free to run, study, share, and modify.</string>
     <string name="technical_info_section">Technical Integrity</string>
