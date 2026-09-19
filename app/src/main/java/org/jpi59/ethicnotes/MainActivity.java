@@ -15,9 +15,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -36,6 +39,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Ethic Notes: Ultra-secure, zero-permission, copyleft personal notes manager.
@@ -64,6 +68,13 @@ public class MainActivity extends Activity {
     private EditText searchInput;
     private TextView appTitle;
     private TextView appSubtitle;
+
+    private View headerBar;
+    private View headerSelectionBar;
+    private TextView selectionTitle;
+    private ImageButton btnSelectionCancel;
+    private ImageButton btnSelectionAll;
+    private ImageButton btnSelectionDelete;
 
     private ImageButton btnThemeToggle;
     private ImageButton btnPrivacyShield;
@@ -100,6 +111,7 @@ public class MainActivity extends Activity {
         dbHelper = new NotesDbHelper(this);
 
         initViews();
+        setupWindowInsets();
         applyPrivacyShield();
         setupList();
         setupSearch();
@@ -127,6 +139,17 @@ public class MainActivity extends Activity {
         appTitle = findViewById(R.id.app_title);
         appSubtitle = findViewById(R.id.app_subtitle);
 
+        headerBar = findViewById(R.id.header_bar);
+        headerSelectionBar = findViewById(R.id.header_selection_bar);
+        selectionTitle = findViewById(R.id.selection_title);
+        btnSelectionCancel = findViewById(R.id.btn_selection_cancel);
+        btnSelectionAll = findViewById(R.id.btn_selection_all);
+        btnSelectionDelete = findViewById(R.id.btn_selection_delete);
+
+        btnSelectionCancel.setOnClickListener(v -> exitSelectionMode());
+        btnSelectionAll.setOnClickListener(v -> toggleSelectAll());
+        btnSelectionDelete.setOnClickListener(v -> confirmDeleteSelectedNotes());
+
         btnThemeToggle = findViewById(R.id.btn_theme_toggle);
         btnThemeToggle.setOnClickListener(v -> toggleTheme());
 
@@ -149,6 +172,35 @@ public class MainActivity extends Activity {
         editorContent = findViewById(R.id.editor_content);
         editorWordCharCount = findViewById(R.id.editor_char_word_count);
         editorDivider = findViewById(R.id.editor_divider);
+    }
+
+    /**
+     * Resolves status bar and navigation bar insets cleanly.
+     * Prevents UI overlap with notifications/camera notch at the top
+     * and the 3-button/gesture navigation bar at the bottom.
+     */
+    private void setupWindowInsets() {
+        if (rootLayout == null) return;
+        rootLayout.setOnApplyWindowInsetsListener((view, insets) -> {
+            int left = 0, top = 0, right = 0, bottom = 0;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
+                );
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(left, top, right, bottom);
+            return insets;
+        });
+        rootLayout.requestApplyInsets();
     }
 
     private int dp(int n) {
@@ -195,10 +247,12 @@ public class MainActivity extends Activity {
         }
         getWindow().getDecorView().setSystemUiVisibility(systemBars);
 
-        // Root & list backgrounds
+        // Root & containers
         rootLayout.setBackgroundColor(surface);
         containerList.setBackgroundColor(surface);
         containerEditor.setBackgroundColor(surface);
+        headerBar.setBackgroundColor(surface);
+        headerSelectionBar.setBackgroundColor(surface);
         editorActionBar.setBackgroundColor(surface);
 
         // Typography
@@ -206,6 +260,7 @@ public class MainActivity extends Activity {
         appSubtitle.setTextColor(muted);
         emptyTitle.setTextColor(ink);
         emptyDesc.setTextColor(muted);
+        selectionTitle.setTextColor(ink);
         editorWordCharCount.setTextColor(muted);
 
         // Search bar
@@ -213,13 +268,18 @@ public class MainActivity extends Activity {
         searchInput.setTextColor(ink);
         searchInput.setHintTextColor(muted);
 
-        // Buttons
+        // Header buttons
         styleImageButton(btnThemeToggle, darkMode ? R.drawable.ic_theme_sun : R.drawable.ic_theme_moon, action);
         btnThemeToggle.setContentDescription(getString(darkMode ? R.string.light_mode : R.string.dark_mode));
 
         int shieldColor = isPrivacyShieldActive ? action : muted;
         styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
         styleImageButton(btnMenuExportImport, R.drawable.ic_share, action);
+
+        // Selection mode buttons
+        styleImageButton(btnSelectionCancel, R.drawable.ic_close, action);
+        styleImageButton(btnSelectionAll, R.drawable.ic_select_all, action);
+        styleImageButton(btnSelectionDelete, R.drawable.ic_delete, getColor(R.color.danger));
 
         // Floating Action Button
         int fabFill = action;
@@ -284,21 +344,120 @@ public class MainActivity extends Activity {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
+    private void triggerLightHaptic() {
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null && vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(35, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vibrator.vibrate(35);
+                }
+            }
+        } catch (Exception ignored) { }
+    }
+
     private void setupList() {
         adapter = new NotesAdapter(this);
         adapter.setDarkMode(darkMode);
         listView.setAdapter(adapter);
+
         listView.setOnItemClickListener((parent, view, position, id) -> {
             Note note = adapter.getItem(position);
-            openEditor(note.getId());
+            if (adapter.isSelectionMode()) {
+                adapter.toggleSelection(note.getId());
+                updateSelectionState();
+            } else {
+                openEditor(note.getId());
+            }
         });
+
+        listView.setOnItemLongClickListener((parent, view, position, id) -> {
+            Note note = adapter.getItem(position);
+            triggerLightHaptic();
+            if (!adapter.isSelectionMode()) {
+                enterSelectionMode(note.getId());
+            } else {
+                adapter.toggleSelection(note.getId());
+                updateSelectionState();
+            }
+            return true;
+        });
+
         loadNotes(null);
+    }
+
+    private void enterSelectionMode(long initialNoteId) {
+        adapter.selectNote(initialNoteId);
+        headerBar.setVisibility(View.GONE);
+        headerSelectionBar.setVisibility(View.VISIBLE);
+        fabAddNote.setVisibility(View.GONE);
+        updateSelectionState();
+    }
+
+    private void exitSelectionMode() {
+        adapter.clearSelection();
+        headerSelectionBar.setVisibility(View.GONE);
+        headerBar.setVisibility(View.VISIBLE);
+        fabAddNote.setVisibility(View.VISIBLE);
+    }
+
+    private void updateSelectionState() {
+        int count = adapter.getSelectedCount();
+        if (count == 0) {
+            exitSelectionMode();
+            return;
+        }
+        selectionTitle.setText(String.format(getString(R.string.selected_count), count));
+    }
+
+    private void toggleSelectAll() {
+        if (adapter.getSelectedCount() == adapter.getCount()) {
+            adapter.clearSelection();
+            exitSelectionMode();
+        } else {
+            adapter.selectAll();
+            updateSelectionState();
+        }
+    }
+
+    private void confirmDeleteSelectedNotes() {
+        final Set<Long> selectedIds = adapter.getSelectedIds();
+        final int count = selectedIds.size();
+        if (count == 0) return;
+
+        int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int action = actionColor();
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(String.format(getString(R.string.confirm_delete_selected_title), count))
+                .setMessage(getString(R.string.confirm_delete_selected_msg))
+                .setPositiveButton(R.string.delete, (d, which) -> {
+                    dbHelper.deleteNotes(selectedIds);
+                    exitSelectionMode();
+                    loadNotes(searchInput != null ? searchInput.getText().toString() : null);
+                    Toast.makeText(this, String.format(getString(R.string.notes_deleted_count), count), Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .create();
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(surface));
+        }
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (pos != null) pos.setTextColor(getColor(R.color.danger));
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        if (neg != null) neg.setTextColor(action);
     }
 
     private void setupSearch() {
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (adapter.isSelectionMode()) {
+                    exitSelectionMode();
+                }
                 loadNotes(s.toString());
             }
             @Override public void afterTextChanged(Editable s) { }
@@ -323,7 +482,6 @@ public class MainActivity extends Activity {
     }
 
     private void setupEditor() {
-        // Back and Save buttons both auto-save and close smoothly without blocking
         btnEditorBack.setOnClickListener(v -> {
             autoSaveCurrentNote();
             closeEditor();
@@ -352,7 +510,6 @@ public class MainActivity extends Activity {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 updateWordCharCounter();
-                // Debounced background auto-save after 1200ms of user pause
                 autoSaveHandler.removeCallbacks(autoSaveRunnable);
                 autoSaveHandler.postDelayed(autoSaveRunnable, 1200);
             }
@@ -364,6 +521,9 @@ public class MainActivity extends Activity {
     }
 
     private void openEditor(long noteId) {
+        if (adapter.isSelectionMode()) {
+            exitSelectionMode();
+        }
         currentNoteId = noteId;
         if (noteId != -1) {
             Note note = dbHelper.getNote(noteId);
@@ -398,7 +558,6 @@ public class MainActivity extends Activity {
 
         if (title.isEmpty() && content.trim().isEmpty()) {
             if (currentNoteId != -1) {
-                // Erased existing note
                 dbHelper.deleteNote(currentNoteId);
                 currentNoteId = -1;
             }
@@ -422,12 +581,11 @@ public class MainActivity extends Activity {
         containerEditor.setVisibility(View.GONE);
         containerList.setVisibility(View.VISIBLE);
         currentNoteId = -1;
-        loadNotes(searchInput.getText().toString());
+        loadNotes(searchInput != null ? searchInput.getText().toString() : null);
     }
 
     private void confirmDeleteNote() {
         int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
-        int ink = darkMode ? Color.rgb(226, 232, 226) : getColor(R.color.ink);
         int action = actionColor();
 
         AlertDialog dialog = new AlertDialog.Builder(this)
@@ -637,7 +795,6 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         autoSaveHandler.removeCallbacks(autoSaveRunnable);
-        // Guarantee note is saved to DB whenever app is backgrounded, minimized, or switched
         autoSaveCurrentNote();
     }
 
@@ -650,6 +807,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (adapter != null && adapter.isSelectionMode()) {
+            exitSelectionMode();
+            return;
+        }
         if (containerEditor.getVisibility() == View.VISIBLE) {
             autoSaveCurrentNote();
             closeEditor();

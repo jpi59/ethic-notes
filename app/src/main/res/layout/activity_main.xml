@@ -3,6 +3,7 @@
     android:id="@+id/main_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/surface">
 
     <!-- LIST VIEW CONTAINER -->
@@ -12,7 +13,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Top Header Bar -->
+        <!-- Normal Top Header Bar -->
         <LinearLayout
             android:id="@+id/header_bar"
             android:layout_width="match_parent"
@@ -20,9 +21,9 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="20dp"
-            android:paddingTop="16dp"
+            android:paddingTop="12dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="10dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -38,7 +39,7 @@
                     android:includeFontPadding="false"
                     android:text="@string/app_name"
                     android:textColor="@color/ink"
-                    android:textSize="23sp" />
+                    android:textSize="22sp" />
 
                 <TextView
                     android:id="@+id/app_subtitle"
@@ -80,13 +81,62 @@
                 android:src="@drawable/ic_share" />
         </LinearLayout>
 
+        <!-- Selection Mode Header Bar -->
+        <LinearLayout
+            android:id="@+id/header_selection_bar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/btn_selection_cancel"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cancel"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_close" />
+
+            <TextView
+                android:id="@+id/selection_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/ink"
+                android:textSize="18sp" />
+
+            <ImageButton
+                android:id="@+id/btn_selection_all"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/select_all"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_select_all" />
+
+            <ImageButton
+                android:id="@+id/btn_selection_delete"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_delete"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_delete" />
+        </LinearLayout>
+
         <!-- Search Input -->
         <EditText
             android:id="@+id/search_input"
             android:layout_width="match_parent"
             android:layout_height="46dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
             android:background="@drawable/search_background"
@@ -115,7 +165,7 @@
                 android:divider="@null"
                 android:dividerHeight="0dp"
                 android:paddingStart="16dp"
-                android:paddingTop="6dp"
+                android:paddingTop="4dp"
                 android:paddingEnd="16dp"
                 android:paddingBottom="90dp" />
 

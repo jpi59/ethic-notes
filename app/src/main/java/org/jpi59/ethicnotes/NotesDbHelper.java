@@ -76,6 +76,22 @@ public class NotesDbHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
+    public int deleteNotes(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
+        SQLiteDatabase db = getWritableDatabase();
+        int count = 0;
+        db.beginTransaction();
+        try {
+            for (Long id : ids) {
+                count += db.delete(TABLE_NOTES, COL_ID + " = ?", new String[]{String.valueOf(id)});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return count;
+    }
+
     public Note getNote(long id) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor cursor = db.query(
