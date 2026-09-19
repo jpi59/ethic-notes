@@ -1,0 +1,10 @@
+Ethic Notes is a fast, responsive, and privacy-first note-taking application designed with an uncompromising security architecture.
+
+Features:
+• Zero permissions declared: completely incapable of opening network connections, reading disk storage, or inspecting hardware identifiers.
+• Privacy Shield: toggle anti-screenshot protection (FLAG_SECURE) to block captures and hide note previews in the recent apps switcher.
+• Storage Access Framework (SAF): import and export notes as plain text or complete JSON backups using Android's native picker without granting filesystem access.
+• Instant search: lightning-fast search across titles and notes using parameterized SQL queries.
+• Word & character counter: live counters as you compose notes.
+• Share integration: receive shared text from other applications seamlessly.
+• 100% offline & open-source: no trackers, no ads, no telemetry.

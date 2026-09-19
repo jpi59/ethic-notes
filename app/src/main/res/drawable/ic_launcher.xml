@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background circle -->
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M54,4 C81.61,4 104,26.39 104,54 C104,81.61 81.61,104 54,104 C26.39,104 4,81.61 4,54 C4,26.39 26.39,4 54,4 Z" />
+    
+    <!-- Shield Outline -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,19 L32,27 C32,53 43,69 54,77 C65,69 76,53 76,27 Z" />
+        
+    <!-- Note Page lines inside shield -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M43,38 L65,38 M43,47 L65,47 M43,56 L57,56" />
+
+    <!-- Pen / Quill Tip Accent in Gold -->
+    <path
+        android:fillColor="#F9A825"
+        android:pathData="M65,58 L72,65 L61,67 Z" />
+</vector>

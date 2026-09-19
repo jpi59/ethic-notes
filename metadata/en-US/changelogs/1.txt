@@ -1,0 +1,5 @@
+Initial release of Ethic Notes:
+- Zero-permission architecture.
+- Full offline SQLite note management.
+- Privacy Shield (FLAG_SECURE) protection.
+- Storage Access Framework (SAF) import/export.

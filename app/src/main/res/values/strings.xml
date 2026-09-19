@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ethic Notes</string>
+    <string name="subtitle">Private, offline, zero-permission notes</string>
+    <string name="search_hint">Search notes...</string>
+    <string name="no_notes_title">No notes yet</string>
+    <string name="no_notes_desc">Tap + to create your first secure note.</string>
+    <string name="no_search_results">No notes match your search.</string>
+    <string name="note_title_hint">Title</string>
+    <string name="note_content_hint">Write your note here...</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_share">Share</string>
+    <string name="action_export">Export (SAF)</string>
+    <string name="action_import">Import (SAF)</string>
+    <string name="action_export_all">Export All Notes</string>
+    <string name="action_privacy_shield">Privacy Shield (Anti-Screenshot)</string>
+    <string name="privacy_shield_enabled">Privacy Shield enabled: screenshots &amp; task previews blocked.</string>
+    <string name="privacy_shield_disabled">Privacy Shield disabled.</string>
+    <string name="confirm_delete_title">Delete Note</string>
+    <string name="confirm_delete_msg">Are you sure you want to permanently delete this note?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="note_saved">Note saved.</string>
+    <string name="note_deleted">Note deleted.</string>
+    <string name="export_success">Note exported successfully.</string>
+    <string name="export_error">Error exporting note.</string>
+    <string name="import_success">Note imported successfully.</string>
+    <string name="import_error">Error importing note.</string>
+    <string name="chars_words_count">%1$d chars · %2$d words</string>
+    <string name="privacy_notice">100% Offline · Zero Permissions · Zero Trackers</string>
+</resources>

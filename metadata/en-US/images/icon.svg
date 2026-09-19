@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
+    <!-- Background circle -->
+    <circle cx="54" cy="54" r="50" fill="#1B5E20" />
+    
+    <!-- Shield Outline -->
+    <path d="M54,19 L32,27 C32,53 43,69 54,77 C65,69 76,53 76,27 Z"
+          fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        
+    <!-- Note Page lines inside shield -->
+    <path d="M43,38 L65,38 M43,47 L65,47 M43,56 L57,56"
+          fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Quill Tip Accent in Gold -->
+    <polygon points="65,58 72,65 61,67" fill="#F9A825" />
+</svg>
