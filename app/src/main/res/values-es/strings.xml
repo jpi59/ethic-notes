@@ -17,8 +17,14 @@
     <string name="action_export_all">Exportar todas las notas (JSON)</string>
     <string name="storage_menu_title">Almacenamiento y Respaldo</string>
     <string name="action_privacy_shield">Escudo de privacidad (Anti-capturas)</string>
-    <string name="privacy_shield_enabled">Escudo activado: capturas y previsualizaciones bloqueadas</string>
-    <string name="privacy_shield_disabled">Escudo de privacidad desactivado</string>
+    <string name="privacy_shield_enabled">Escudo de privacidad: ACTIVADO (Anti-capturas habilitado)</string>
+    <string name="privacy_shield_disabled">Escudo de privacidad: DESACTIVADO (Capturas permitidas)</string>
+    <string name="privacy_shield_active_desc">Escudo de privacidad: Activado (Anti-capturas habilitado)</string>
+    <string name="privacy_shield_inactive_desc">Escudo de privacidad: Desactivado (Capturas permitidas)</string>
+    <string name="privacy_shield_status_active">ACTIVADO</string>
+    <string name="privacy_shield_status_inactive">DESACTIVADO</string>
+    <string name="privacy_shield_active_badge_desc">Protección activa</string>
+    <string name="privacy_shield_inactive_badge_desc">Sin protección</string>
     <string name="confirm_delete_title">Eliminar nota</string>
     <string name="confirm_delete_msg">¿Deseas eliminar definitivamente esta nota?</string>
     <string name="delete">Eliminar</string>

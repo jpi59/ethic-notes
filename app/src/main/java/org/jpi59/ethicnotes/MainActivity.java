@@ -280,8 +280,7 @@ public class MainActivity extends Activity {
         styleImageButton(btnThemeToggle, darkMode ? R.drawable.ic_theme_sun : R.drawable.ic_theme_moon, action);
         btnThemeToggle.setContentDescription(getString(darkMode ? R.string.light_mode : R.string.dark_mode));
 
-        int shieldColor = isPrivacyShieldActive ? action : muted;
-        styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
+        applyPrivacyShield();
 
         styleImageButton(btnSelectionCancel, R.drawable.ic_close, action);
         styleImageButton(btnSelectionAll, R.drawable.ic_select_all, action);
@@ -331,8 +330,30 @@ public class MainActivity extends Activity {
         } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         }
-        int shieldColor = isPrivacyShieldActive ? actionColor() : (darkMode ? Color.rgb(177, 184, 177) : getColor(R.color.muted));
-        styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
+
+        int action = actionColor();
+        int muted = darkMode ? Color.rgb(177, 184, 177) : getColor(R.color.muted);
+
+        if (btnPrivacyShield != null) {
+            if (isPrivacyShieldActive) {
+                styleImageButton(btnPrivacyShield, R.drawable.ic_shield_active, action);
+                int activeBgFill = darkMode ? Color.argb(60, 114, 205, 187) : Color.argb(45, 20, 92, 82);
+                btnPrivacyShield.setBackground(roundedBackground(activeBgFill, action, 14));
+                String desc = getString(R.string.privacy_shield_active_desc);
+                btnPrivacyShield.setContentDescription(desc);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    btnPrivacyShield.setTooltipText(desc);
+                }
+            } else {
+                styleImageButton(btnPrivacyShield, R.drawable.ic_shield_off, muted);
+                btnPrivacyShield.setBackgroundColor(Color.TRANSPARENT);
+                String desc = getString(R.string.privacy_shield_inactive_desc);
+                btnPrivacyShield.setContentDescription(desc);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    btnPrivacyShield.setTooltipText(desc);
+                }
+            }
+        }
     }
 
     private void togglePrivacyShield() {
@@ -827,17 +848,31 @@ public class MainActivity extends Activity {
         LinearLayout shieldRow = new LinearLayout(this);
         shieldRow.setOrientation(LinearLayout.HORIZONTAL);
         shieldRow.setGravity(Gravity.CENTER_VERTICAL);
-        shieldRow.setPadding(0, dp(4), 0, dp(4));
+        shieldRow.setPadding(0, dp(6), 0, dp(6));
+
+        ImageView shieldDialogIcon = new ImageView(this);
+        LinearLayout.LayoutParams shieldIconParams = new LinearLayout.LayoutParams(dp(28), dp(28));
+        shieldIconParams.setMarginEnd(dp(12));
+        shieldDialogIcon.setLayoutParams(shieldIconParams);
+        shieldRow.addView(shieldDialogIcon);
 
         LinearLayout shieldTextCol = new LinearLayout(this);
         shieldTextCol.setOrientation(LinearLayout.VERTICAL);
         shieldTextCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+
         TextView shieldTitle = new TextView(this);
-        shieldTitle.setText(R.string.action_privacy_shield);
+        shieldTitle.setText(R.string.privacy_shield_label);
         shieldTitle.setTextSize(15);
         shieldTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         shieldTitle.setTextColor(ink);
         shieldTextCol.addView(shieldTitle);
+
+        TextView shieldStatusBadge = new TextView(this);
+        shieldStatusBadge.setTextSize(12);
+        shieldStatusBadge.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        shieldStatusBadge.setPadding(0, dp(1), 0, dp(2));
+        shieldTextCol.addView(shieldStatusBadge);
+
         TextView shieldDesc = new TextView(this);
         shieldDesc.setText(R.string.privacy_shield_desc);
         shieldDesc.setTextSize(12);
@@ -847,7 +882,36 @@ public class MainActivity extends Activity {
 
         Switch shieldSwitch = new Switch(this);
         shieldSwitch.setChecked(isPrivacyShieldActive);
-        shieldSwitch.setOnCheckedChangeListener((btn, checked) -> togglePrivacyShield());
+
+        Runnable updateShieldUi = () -> {
+            if (isPrivacyShieldActive) {
+                Drawable d = getDrawable(R.drawable.ic_shield_active);
+                if (d != null) {
+                    d = d.mutate();
+                    d.setTint(action);
+                    shieldDialogIcon.setImageDrawable(d);
+                }
+                shieldStatusBadge.setText("● " + getString(R.string.privacy_shield_status_active) + " · " + getString(R.string.privacy_shield_active_badge_desc));
+                shieldStatusBadge.setTextColor(action);
+            } else {
+                Drawable d = getDrawable(R.drawable.ic_shield_off);
+                if (d != null) {
+                    d = d.mutate();
+                    d.setTint(muted);
+                    shieldDialogIcon.setImageDrawable(d);
+                }
+                shieldStatusBadge.setText("○ " + getString(R.string.privacy_shield_status_inactive) + " · " + getString(R.string.privacy_shield_inactive_badge_desc));
+                shieldStatusBadge.setTextColor(muted);
+            }
+        };
+        updateShieldUi.run();
+
+        shieldSwitch.setOnCheckedChangeListener((btn, checked) -> {
+            if (checked != isPrivacyShieldActive) {
+                togglePrivacyShield();
+                updateShieldUi.run();
+            }
+        });
         shieldRow.addView(shieldSwitch);
         shieldCard.addView(shieldRow);
         root.addView(shieldCard);

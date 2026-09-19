@@ -17,8 +17,14 @@
     <string name="action_export_all">Export all notes (JSON)</string>
     <string name="storage_menu_title">Storage &amp; Backup</string>
     <string name="action_privacy_shield">Privacy Shield (Anti-screenshot)</string>
-    <string name="privacy_shield_enabled">Privacy Shield enabled: screenshots &amp; recent task previews blocked</string>
-    <string name="privacy_shield_disabled">Privacy Shield disabled</string>
+    <string name="privacy_shield_enabled">Privacy Shield: ACTIVATED (Screenshots &amp; recent previews blocked)</string>
+    <string name="privacy_shield_disabled">Privacy Shield: DEACTIVATED (Screenshots allowed)</string>
+    <string name="privacy_shield_active_desc">Privacy Shield: Active (Anti-screenshot enabled)</string>
+    <string name="privacy_shield_inactive_desc">Privacy Shield: Inactive (Screenshots allowed)</string>
+    <string name="privacy_shield_status_active">ACTIVATED</string>
+    <string name="privacy_shield_status_inactive">DEACTIVATED</string>
+    <string name="privacy_shield_active_badge_desc">Protection active</string>
+    <string name="privacy_shield_inactive_badge_desc">Protection off</string>
     <string name="confirm_delete_title">Delete Note</string>
     <string name="confirm_delete_msg">Are you sure you want to delete this note?</string>
     <string name="delete">Delete</string>
