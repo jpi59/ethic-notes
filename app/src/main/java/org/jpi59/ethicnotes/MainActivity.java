@@ -6,7 +6,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -19,14 +21,18 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,6 +61,15 @@ public class MainActivity extends Activity {
     private static final int REQ_EXPORT_ALL = 1002;
     private static final int REQ_IMPORT = 1003;
 
+    private static final String[][] ECOSYSTEM_APPS = {
+            {"Ethic Tuner", "org.jpi59.ethictuner", "Afinador cromático de máxima precisión", "https://github.com/jpi59/ethic-tuner"},
+            {"Ethic Compass", "org.jpi59.ethiccompass", "Brújula offline de sensores puros", "https://github.com/jpi59/ethic-compass"},
+            {"Ethic QR Scanner", "org.jpi59.ethicqrscanner", "Lector QR sin rastreadores", "https://github.com/jpi59/ethic-qr-scanner"},
+            {"Ethic Keyboard", "org.jpi59.teclado", "Teclado privado sin conexión a red", "https://github.com/jpi59/ethic-keyboard"},
+            {"Ethic APK Guard", "org.jpi59.ethicupdatesafe", "Instalador y verificador seguro de APKs", "https://github.com/jpi59/ethic-apk-guard"},
+            {"Ethic One Call", "org.jpi59.ethichandoff", "Gestor ético de llamadas de emergencia", "https://github.com/jpi59/ethic-one-call"}
+    };
+
     private NotesDbHelper dbHelper;
     private NotesAdapter adapter;
 
@@ -76,9 +91,9 @@ public class MainActivity extends Activity {
     private ImageButton btnSelectionAll;
     private ImageButton btnSelectionDelete;
 
+    private ImageButton btnMenu;
     private ImageButton btnThemeToggle;
     private ImageButton btnPrivacyShield;
-    private ImageButton btnMenuExportImport;
     private ImageButton fabAddNote;
 
     private ImageButton btnEditorBack;
@@ -91,6 +106,8 @@ public class MainActivity extends Activity {
     private TextView editorWordCharCount;
     private View editorDivider;
     private View editorActionBar;
+
+    private AlertDialog settingsDialog;
 
     private long currentNoteId = -1;
     private boolean darkMode = false;
@@ -150,14 +167,14 @@ public class MainActivity extends Activity {
         btnSelectionAll.setOnClickListener(v -> toggleSelectAll());
         btnSelectionDelete.setOnClickListener(v -> confirmDeleteSelectedNotes());
 
+        btnMenu = findViewById(R.id.btn_menu);
+        btnMenu.setOnClickListener(v -> showEcosystemMenu());
+
         btnThemeToggle = findViewById(R.id.btn_theme_toggle);
         btnThemeToggle.setOnClickListener(v -> toggleTheme());
 
         btnPrivacyShield = findViewById(R.id.btn_privacy_shield);
         btnPrivacyShield.setOnClickListener(v -> togglePrivacyShield());
-
-        btnMenuExportImport = findViewById(R.id.btn_menu_export_import);
-        btnMenuExportImport.setOnClickListener(v -> showStorageMenu());
 
         fabAddNote = findViewById(R.id.fab_add_note);
         fabAddNote.setOnClickListener(v -> openEditor(-1));
@@ -174,11 +191,6 @@ public class MainActivity extends Activity {
         editorDivider = findViewById(R.id.editor_divider);
     }
 
-    /**
-     * Resolves status bar and navigation bar insets cleanly.
-     * Prevents UI overlap with notifications/camera notch at the top
-     * and the 3-button/gesture navigation bar at the bottom.
-     */
     private void setupWindowInsets() {
         if (rootLayout == null) return;
         rootLayout.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -238,7 +250,6 @@ public class MainActivity extends Activity {
         int cardStroke = darkMode ? Color.rgb(44, 51, 46) : Color.rgb(228, 226, 220);
         int action = actionColor();
 
-        // System bars
         getWindow().setStatusBarColor(surface);
         getWindow().setNavigationBarColor(surface);
         int systemBars = darkMode ? 0 : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
@@ -247,7 +258,6 @@ public class MainActivity extends Activity {
         }
         getWindow().getDecorView().setSystemUiVisibility(systemBars);
 
-        // Root & containers
         rootLayout.setBackgroundColor(surface);
         containerList.setBackgroundColor(surface);
         containerEditor.setBackgroundColor(surface);
@@ -255,7 +265,6 @@ public class MainActivity extends Activity {
         headerSelectionBar.setBackgroundColor(surface);
         editorActionBar.setBackgroundColor(surface);
 
-        // Typography
         appTitle.setTextColor(ink);
         appSubtitle.setTextColor(muted);
         emptyTitle.setTextColor(ink);
@@ -263,25 +272,21 @@ public class MainActivity extends Activity {
         selectionTitle.setTextColor(ink);
         editorWordCharCount.setTextColor(muted);
 
-        // Search bar
         searchInput.setBackground(roundedBackground(cardFill, cardStroke, 14));
         searchInput.setTextColor(ink);
         searchInput.setHintTextColor(muted);
 
-        // Header buttons
+        styleImageButton(btnMenu, R.drawable.ic_settings_menu, action);
         styleImageButton(btnThemeToggle, darkMode ? R.drawable.ic_theme_sun : R.drawable.ic_theme_moon, action);
         btnThemeToggle.setContentDescription(getString(darkMode ? R.string.light_mode : R.string.dark_mode));
 
         int shieldColor = isPrivacyShieldActive ? action : muted;
         styleImageButton(btnPrivacyShield, R.drawable.ic_shield, shieldColor);
-        styleImageButton(btnMenuExportImport, R.drawable.ic_share, action);
 
-        // Selection mode buttons
         styleImageButton(btnSelectionCancel, R.drawable.ic_close, action);
         styleImageButton(btnSelectionAll, R.drawable.ic_select_all, action);
         styleImageButton(btnSelectionDelete, R.drawable.ic_delete, getColor(R.color.danger));
 
-        // Floating Action Button
         int fabFill = action;
         GradientDrawable fabBg = new GradientDrawable();
         fabBg.setShape(GradientDrawable.OVAL);
@@ -294,14 +299,12 @@ public class MainActivity extends Activity {
             fabAddNote.setImageDrawable(addIcon);
         }
 
-        // Editor inputs
         editorTitle.setTextColor(ink);
         editorTitle.setHintTextColor(muted);
         editorContent.setTextColor(ink);
         editorContent.setHintTextColor(muted);
         editorDivider.setBackgroundColor(cardStroke);
 
-        // Editor buttons
         styleImageButton(btnEditorBack, R.drawable.ic_back, action);
         styleImageButton(btnEditorShare, R.drawable.ic_share, action);
         styleImageButton(btnEditorExport, R.drawable.ic_shield, action);
@@ -543,11 +546,6 @@ public class MainActivity extends Activity {
         editorContent.requestFocus();
     }
 
-    /**
-     * Auto-saves the current note.
-     * Never requires a title; if title is omitted, saves content safely.
-     * Updates currentNoteId upon creation to prevent duplicated records.
-     */
     private synchronized boolean autoSaveCurrentNote() {
         if (containerEditor.getVisibility() != View.VISIBLE) {
             return false;
@@ -631,7 +629,6 @@ public class MainActivity extends Activity {
         startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)));
     }
 
-    // STORAGE ACCESS FRAMEWORK (SAF): ZERO PERMISSIONS REQUIRED
     private void exportSingleNoteSaf() {
         autoSaveCurrentNote();
         String title = editorTitle.getText().toString().trim();
@@ -651,27 +648,362 @@ public class MainActivity extends Activity {
         startActivityForResult(intent, REQ_EXPORT_NOTE);
     }
 
-    private void showStorageMenu() {
-        int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
-        String[] options = new String[]{
-                getString(R.string.action_import),
-                getString(R.string.action_export_all)
-        };
+    /* -------------------------------------------------------------
+     * MENU DESPLEGABLE Y ECOSISTEMA ÉTICO (3 RAYITAS)
+     * ------------------------------------------------------------- */
+    private TextView createSectionHeader(String text, int color) {
+        TextView tv = new TextView(this);
+        tv.setText(text.toUpperCase());
+        tv.setTextSize(12);
+        tv.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        tv.setTextColor(color);
+        tv.setLetterSpacing(0.08f);
+        tv.setPadding(0, dp(14), 0, dp(6));
+        return tv;
+    }
+
+    private LinearLayout createCardLayout(int fill, int stroke) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setBackground(roundedBackground(fill, stroke, 14));
+        layout.setPadding(dp(14), dp(10), dp(14), dp(10));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.bottomMargin = dp(4);
+        layout.setLayoutParams(params);
+        return layout;
+    }
+
+    private View createDivider(int stroke) {
+        View v = new View(this);
+        v.setBackgroundColor(stroke);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(1));
+        p.topMargin = dp(6);
+        p.bottomMargin = dp(6);
+        v.setLayoutParams(p);
+        return v;
+    }
+
+    private View createActionRow(int iconRes, String title, String desc, int ink, int muted, int action, View.OnClickListener listener) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(8), 0, dp(8));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setBackground(roundedBackground(Color.TRANSPARENT, Color.TRANSPARENT, 8));
+
+        ImageView icon = new ImageView(this);
+        Drawable d = getDrawable(iconRes);
+        if (d != null) {
+            d = d.mutate();
+            d.setTint(action);
+            icon.setImageDrawable(d);
+        }
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(24), dp(24));
+        iconParams.setMarginEnd(dp(12));
+        row.addView(icon, iconParams);
+
+        LinearLayout textCol = new LinearLayout(this);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+        textCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+
+        TextView tvTitle = new TextView(this);
+        tvTitle.setText(title);
+        tvTitle.setTextSize(15);
+        tvTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        tvTitle.setTextColor(ink);
+        textCol.addView(tvTitle);
+
+        if (desc != null && !desc.isEmpty()) {
+            TextView tvDesc = new TextView(this);
+            tvDesc.setText(desc);
+            tvDesc.setTextSize(12);
+            tvDesc.setTextColor(muted);
+            textCol.addView(tvDesc);
+        }
+        row.addView(textCol);
+
+        ImageView openIcon = new ImageView(this);
+        Drawable arrow = getDrawable(R.drawable.ic_open_app);
+        if (arrow != null) {
+            arrow = arrow.mutate();
+            arrow.setTint(muted);
+            openIcon.setImageDrawable(arrow);
+        }
+        LinearLayout.LayoutParams arrowParams = new LinearLayout.LayoutParams(dp(18), dp(18));
+        arrowParams.setMarginStart(dp(8));
+        row.addView(openIcon, arrowParams);
+
+        row.setOnClickListener(listener);
+        return row;
+    }
+
+    private View createKeyValueRow(String key, String value, int ink, int muted) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setPadding(0, dp(6), 0, dp(6));
+
+        TextView tvKey = new TextView(this);
+        tvKey.setText(key);
+        tvKey.setTextSize(12);
+        tvKey.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        tvKey.setTextColor(muted);
+        row.addView(tvKey);
+
+        TextView tvVal = new TextView(this);
+        tvVal.setText(value);
+        tvVal.setTextSize(13);
+        tvVal.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        tvVal.setTextColor(ink);
+        row.addView(tvVal);
+        return row;
+    }
+
+    private void showEcosystemMenu() {
+        int surface = darkMode ? Color.rgb(20, 23, 21) : Color.rgb(248, 247, 243);
+        int dialogSurface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int cardStroke = darkMode ? Color.rgb(44, 51, 46) : Color.rgb(228, 226, 220);
+        int ink = darkMode ? Color.rgb(226, 232, 226) : getColor(R.color.ink);
+        int muted = darkMode ? Color.rgb(177, 184, 177) : getColor(R.color.muted);
+        int action = actionColor();
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(20), dp(16), dp(20), dp(20));
+
+        // 1. Header with App Icon and Badge
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(0, 0, 0, dp(14));
+
+        ImageView icon = new ImageView(this);
+        icon.setImageDrawable(getDrawable(R.drawable.ic_launcher));
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(44), dp(44));
+        iconParams.setMarginEnd(dp(12));
+        header.addView(icon, iconParams);
+
+        LinearLayout titleCol = new LinearLayout(this);
+        titleCol.setOrientation(LinearLayout.VERTICAL);
+        TextView title = new TextView(this);
+        title.setText("Ethic Notes · v1.0.0");
+        title.setTextSize(18);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        title.setTextColor(ink);
+        titleCol.addView(title);
+
+        TextView badge = new TextView(this);
+        badge.setText(R.string.zero_permissions_badge);
+        badge.setTextSize(12);
+        badge.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        badge.setTextColor(action);
+        titleCol.addView(badge);
+        header.addView(titleCol);
+        root.addView(header);
+
+        // 2. Storage & Backup Section
+        root.addView(createSectionHeader(getString(R.string.storage_backup_section), action));
+        LinearLayout storageCard = createCardLayout(dialogSurface, cardStroke);
+        storageCard.addView(createActionRow(
+                R.drawable.ic_shield,
+                getString(R.string.export_notes_label),
+                getString(R.string.export_notes_desc),
+                ink, muted, action,
+                v -> { if (settingsDialog != null) settingsDialog.dismiss(); exportAllNotesSaf(); }
+        ));
+        storageCard.addView(createDivider(cardStroke));
+        storageCard.addView(createActionRow(
+                R.drawable.ic_share,
+                getString(R.string.import_notes_label),
+                getString(R.string.import_notes_desc),
+                ink, muted, action,
+                v -> { if (settingsDialog != null) settingsDialog.dismiss(); importNotesSaf(); }
+        ));
+        root.addView(storageCard);
+
+        // 3. Privacy Shield Section
+        root.addView(createSectionHeader(getString(R.string.privacy_shield_label), action));
+        LinearLayout shieldCard = createCardLayout(dialogSurface, cardStroke);
+        LinearLayout shieldRow = new LinearLayout(this);
+        shieldRow.setOrientation(LinearLayout.HORIZONTAL);
+        shieldRow.setGravity(Gravity.CENTER_VERTICAL);
+        shieldRow.setPadding(0, dp(4), 0, dp(4));
+
+        LinearLayout shieldTextCol = new LinearLayout(this);
+        shieldTextCol.setOrientation(LinearLayout.VERTICAL);
+        shieldTextCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+        TextView shieldTitle = new TextView(this);
+        shieldTitle.setText(R.string.action_privacy_shield);
+        shieldTitle.setTextSize(15);
+        shieldTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        shieldTitle.setTextColor(ink);
+        shieldTextCol.addView(shieldTitle);
+        TextView shieldDesc = new TextView(this);
+        shieldDesc.setText(R.string.privacy_shield_desc);
+        shieldDesc.setTextSize(12);
+        shieldDesc.setTextColor(muted);
+        shieldTextCol.addView(shieldDesc);
+        shieldRow.addView(shieldTextCol);
+
+        Switch shieldSwitch = new Switch(this);
+        shieldSwitch.setChecked(isPrivacyShieldActive);
+        shieldSwitch.setOnCheckedChangeListener((btn, checked) -> togglePrivacyShield());
+        shieldRow.addView(shieldSwitch);
+        shieldCard.addView(shieldRow);
+        root.addView(shieldCard);
+
+        // 4. Ethic Ecosystem Section
+        root.addView(createSectionHeader(getString(R.string.ecosystem_section), action));
+        TextView ecoDesc = new TextView(this);
+        ecoDesc.setText(R.string.ecosystem_desc);
+        ecoDesc.setTextSize(12);
+        ecoDesc.setTextColor(muted);
+        ecoDesc.setPadding(0, 0, 0, dp(6));
+        root.addView(ecoDesc);
+
+        LinearLayout ecoCard = createCardLayout(dialogSurface, cardStroke);
+        PackageManager pm = getPackageManager();
+        for (int i = 0; i < ECOSYSTEM_APPS.length; i++) {
+            if (i > 0) ecoCard.addView(createDivider(cardStroke));
+            final String name = ECOSYSTEM_APPS[i][0];
+            final String pkg = ECOSYSTEM_APPS[i][1];
+            final String desc = ECOSYSTEM_APPS[i][2];
+            final String url = ECOSYSTEM_APPS[i][3];
+            final Intent launchIntent = pm.getLaunchIntentForPackage(pkg);
+            final boolean isInstalled = launchIntent != null;
+
+            LinearLayout appRow = new LinearLayout(this);
+            appRow.setOrientation(LinearLayout.HORIZONTAL);
+            appRow.setGravity(Gravity.CENTER_VERTICAL);
+            appRow.setPadding(0, dp(8), 0, dp(8));
+
+            LinearLayout textCol = new LinearLayout(this);
+            textCol.setOrientation(LinearLayout.VERTICAL);
+            textCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+
+            TextView appNameView = new TextView(this);
+            appNameView.setText(name);
+            appNameView.setTextSize(15);
+            appNameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            appNameView.setTextColor(ink);
+            textCol.addView(appNameView);
+
+            TextView appDescView = new TextView(this);
+            appDescView.setText(desc);
+            appDescView.setTextSize(12);
+            appDescView.setTextColor(muted);
+            textCol.addView(appDescView);
+
+            appRow.addView(textCol);
+
+            Button actionBtn = new Button(this);
+            actionBtn.setText(isInstalled ? R.string.app_open : R.string.app_view);
+            actionBtn.setTextSize(13);
+            actionBtn.setAllCaps(false);
+            actionBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            if (isInstalled) {
+                actionBtn.setTextColor(Color.rgb(255, 255, 255));
+                actionBtn.setBackground(roundedBackground(action, action, 14));
+            } else {
+                actionBtn.setTextColor(action);
+                actionBtn.setBackground(roundedBackground(Color.TRANSPARENT, action, 14));
+            }
+            actionBtn.setPadding(dp(12), dp(4), dp(12), dp(4));
+            actionBtn.setOnClickListener(v -> {
+                if (isInstalled) {
+                    startActivity(launchIntent);
+                } else {
+                    Intent browseIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(browseIntent);
+                }
+            });
+            LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-2, dp(36));
+            btnParams.setMarginStart(dp(8));
+            appRow.addView(actionBtn, btnParams);
+            ecoCard.addView(appRow);
+        }
+        root.addView(ecoCard);
+
+        // 5. Open Source & Sovereignty
+        root.addView(createSectionHeader(getString(R.string.open_source_section), action));
+        LinearLayout repoCard = createCardLayout(dialogSurface, cardStroke);
+        repoCard.addView(createActionRow(
+                R.drawable.ic_code,
+                getString(R.string.github_repo_label),
+                "github.com/jpi59/ethic-notes",
+                ink, muted, action,
+                v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jpi59/ethic-notes")))
+        ));
+        repoCard.addView(createDivider(cardStroke));
+        repoCard.addView(createActionRow(
+                R.drawable.ic_code,
+                getString(R.string.gitlab_mirror_label),
+                "gitlab.com/jpi59/ethic-notes",
+                ink, muted, action,
+                v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitlab.com/jpi59/ethic-notes")))
+        ));
+        repoCard.addView(createDivider(cardStroke));
+        repoCard.addView(createActionRow(
+                R.drawable.ic_info,
+                getString(R.string.license_label),
+                getString(R.string.license_desc),
+                ink, muted, action,
+                v -> showLicenseDialog()
+        ));
+        root.addView(repoCard);
+
+        // 6. Technical Integrity
+        root.addView(createSectionHeader(getString(R.string.technical_info_section), action));
+        LinearLayout techCard = createCardLayout(dialogSurface, cardStroke);
+        techCard.addView(createKeyValueRow(getString(R.string.package_id_label), "org.jpi59.ethicnotes", ink, muted));
+        techCard.addView(createDivider(cardStroke));
+        techCard.addView(createKeyValueRow(getString(R.string.key_fingerprint_label), "72252b0d955ad29dadf2f1219f1990433d6fd3cbb3ce714bdaa69b1342d6d841", ink, muted));
+        root.addView(techCard);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(root);
+
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.storage_menu_title)
-                .setItems(options, (d, which) -> {
-                    if (which == 0) {
-                        importNotesSaf();
-                    } else if (which == 1) {
-                        exportAllNotesSaf();
-                    }
-                })
+                .setView(scroll)
+                .setPositiveButton(R.string.done, null)
                 .create();
 
         dialog.show();
+        settingsDialog = dialog;
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(surface));
         }
+        Button doneBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (doneBtn != null) {
+            doneBtn.setTextColor(action);
+            doneBtn.setTextSize(16);
+            doneBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        }
+    }
+
+    private void showLicenseDialog() {
+        int surface = darkMode ? Color.rgb(30, 35, 32) : Color.rgb(255, 255, 255);
+        int action = actionColor();
+
+        AlertDialog d = new AlertDialog.Builder(this)
+                .setTitle(R.string.license_label)
+                .setMessage("Ethic Notes · Copyright (C) 2026 jpi59\n\n" +
+                        "This program is free software: you can redistribute it and/or modify " +
+                        "it under the terms of the GNU General Public License as published by " +
+                        "the Free Software Foundation, either version 3 of the License, or " +
+                        "(at your option) any later version.\n\n" +
+                        "This program is distributed in the hope that it will be useful, " +
+                        "but WITHOUT ANY WARRANTY; without even the implied warranty of " +
+                        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the " +
+                        "GNU General Public License for more details.")
+                .setPositiveButton(R.string.done, null)
+                .create();
+        d.show();
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new ColorDrawable(surface));
+        }
+        Button b = d.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (b != null) b.setTextColor(action);
     }
 
     private void exportAllNotesSaf() {

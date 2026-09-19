@@ -37,4 +37,29 @@
     <string name="confirm_delete_selected_title">Delete %1$d selected notes?</string>
     <string name="confirm_delete_selected_msg">Are you sure you want to delete the selected notes?</string>
     <string name="notes_deleted_count">%1$d notes deleted</string>
+
+    <!-- Menu & Ecosystem -->
+    <string name="menu_title">Menu &amp; Ecosystem</string>
+    <string name="ecosystem_section">Ethic Ecosystem</string>
+    <string name="ecosystem_desc">Sovereign, offline, privacy-first copyleft apps by jpi59.</string>
+    <string name="app_installed">Installed</string>
+    <string name="app_open">Open</string>
+    <string name="app_view">View</string>
+    <string name="storage_backup_section">Storage &amp; Backup (SAF)</string>
+    <string name="export_notes_label">Export all notes</string>
+    <string name="export_notes_desc">Save encrypted/clean JSON backup without broad storage permissions.</string>
+    <string name="import_notes_label">Import notes</string>
+    <string name="import_notes_desc">Restore notes from JSON or plain text document.</string>
+    <string name="privacy_shield_label">Privacy Shield (Anti-screenshot)</string>
+    <string name="privacy_shield_desc">Blocks screenshots, recordings, and recent app previews.</string>
+    <string name="open_source_section">Sovereignty &amp; Source Code</string>
+    <string name="github_repo_label">GitHub Repository</string>
+    <string name="gitlab_mirror_label">GitLab Mirror</string>
+    <string name="license_label">GNU GPLv3 License</string>
+    <string name="license_desc">Strict Copyleft. Free to run, study, share, and modify.</string>
+    <string name="technical_info_section">Technical Integrity</string>
+    <string name="package_id_label">Package ID</string>
+    <string name="key_fingerprint_label">Signer Certificate (SHA-256)</string>
+    <string name="zero_permissions_badge">0 Permissions Declared · 100% Offline</string>
+    <string name="done">Done</string>
 </resources>
