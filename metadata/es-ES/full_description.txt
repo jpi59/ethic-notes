@@ -1,0 +1,9 @@
+Ethic Notes es una aplicación de notas privada, 100% offline y con cero permisos para Android.
+
+* Cero permisos declarados: sin internet, sin almacenamiento global y sin rastreadores.
+* Escudo de Privacidad: bloquea capturas de pantalla, grabaciones y previsualización multitarea.
+* Storage Access Framework: exporta e importa notas en formato JSON o texto plano de forma segura.
+* Auto-guardado transparente: guarda en segundo plano continuamente sin obligar a ingresar título ni confirmaciones.
+* Selección múltiple directa: selecciona y elimina lotes de notas directamente desde la lista principal.
+* Ecosistema Ético Soberano: panel integrado de aplicaciones libres y utilidades offline de jpi59.
+* Multi-idioma: inglés por defecto, español nativo y soporte para preferencia de idioma por aplicación en Android 13+.
