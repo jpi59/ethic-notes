@@ -44,9 +44,9 @@
     <string name="confirm_delete_selected_msg">Are you sure you want to delete the selected notes?</string>
     <string name="notes_deleted_count">%1$d notes deleted</string>
 
-    <!-- Menu & Ecosystem -->
-    <string name="menu_title">Menu &amp; Ecosystem</string>
-    <string name="ecosystem_section">Ethic Ecosystem</string>
+    <!-- Menu & Projects -->
+    <string name="menu_title">About us</string>
+    <string name="ecosystem_section">Projects</string>
     <string name="ecosystem_desc">Sovereign, offline, privacy-first copyleft apps by jpi59.</string>
     <string name="app_installed">Installed</string>
     <string name="app_open">Open</string>

@@ -44,9 +44,9 @@
     <string name="confirm_delete_selected_msg">¿Seguro que deseas eliminar definitivamente las notas seleccionadas?</string>
     <string name="notes_deleted_count">%1$d notas eliminadas</string>
 
-    <!-- Menu y Ecosistema -->
-    <string name="menu_title">Menú y Ecosistema</string>
-    <string name="ecosystem_section">Ecosistema Ético</string>
+    <!-- Menú y Proyectos -->
+    <string name="menu_title">Acerca de nosotros</string>
+    <string name="ecosystem_section">Proyectos</string>
     <string name="ecosystem_desc">Aplicaciones soberanas, 100% offline y de código libre copyleft creadas por jpi59.</string>
     <string name="app_installed">Instalada</string>
     <string name="app_open">Abrir</string>
