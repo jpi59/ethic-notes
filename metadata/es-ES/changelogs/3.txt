@@ -1,0 +1,1 @@
+Inclusión de cabeceras estándar de licencia GPL-3.0-or-later en todo el código fuente.
