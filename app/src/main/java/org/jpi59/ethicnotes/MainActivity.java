@@ -825,7 +825,9 @@ public class MainActivity extends Activity {
         LinearLayout titleCol = new LinearLayout(this);
         titleCol.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
-        title.setText("Ethic Notes · v1.0.0");
+        String vn = "1.0.2";
+        try { vn = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) {}
+        title.setText("Ethic Notes · v" + vn);
         title.setTextSize(18);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setTextColor(ink);
